@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity ^0.8.2;
 
 import {Functions, FunctionsClient} from "./dev/functions/FunctionsClient.sol";
 // import "@chainlink/contracts/src/v0.8/dev/functions/FunctionsClient.sol"; // Once published
@@ -16,6 +16,9 @@ contract FunctionsConsumer is FunctionsClient, ConfirmedOwner {
   bytes32 public latestRequestId;
   bytes public latestResponse;
   bytes public latestError;
+
+  uint256 public prec;
+  uint256 public precDays;
 
   event OCRResponse(bytes32 indexed requestId, bytes result, bytes err);
 
@@ -68,7 +71,12 @@ contract FunctionsConsumer is FunctionsClient, ConfirmedOwner {
   function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
     latestResponse = response;
     latestError = err;
+
     emit OCRResponse(requestId, response, err);
+
+    if (err.length == 0) {
+      (prec, precDays) = abi.decode(response, (uint256, uint256));
+    }
   }
 
   /**

@@ -1,5 +1,6 @@
 const { networks } = require("../../networks")
 
+// npx hardhat functions-sub-info --subid 550 --network polygonMumbai
 task(
   "functions-sub-info",
   "Gets the Functions billing subscription balance, owner, and list of authorized consumer contract addresses"

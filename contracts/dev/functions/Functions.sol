@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import {CBOR, Buffer} from "../vendor/solidity-cborutils/2.0.0/CBOR.sol";
 
@@ -30,12 +30,6 @@ library Functions {
     string[] args;
   }
 
-  error EmptySource();
-  error EmptyUrl();
-  error EmptySecrets();
-  error EmptyArgs();
-  error NoInlineSecrets();
-
   /**
    * @notice Encodes a Request to CBOR encoded bytes
    * @param self The request to encode
@@ -65,7 +59,7 @@ library Functions {
 
     if (self.secrets.length > 0) {
       if (self.secretsLocation == Location.Inline) {
-        revert NoInlineSecrets();
+        revert("ERROR:NoInlineSecrets");
       }
       CBOR.writeString(buffer, "secretsLocation");
       CBOR.writeUInt256(buffer, uint256(self.secretsLocation));
@@ -90,7 +84,7 @@ library Functions {
     CodeLanguage language,
     string memory source
   ) internal pure {
-    if (bytes(source).length == 0) revert EmptySource();
+    if (bytes(source).length == 0) revert("ERROR:EmptySource");
 
     self.codeLocation = location;
     self.language = language;
@@ -113,7 +107,7 @@ library Functions {
    * @param encryptedSecretsURLs Encrypted comma-separated string of URLs pointing to off-chain secrets
    */
   function addRemoteSecrets(Request memory self, bytes memory encryptedSecretsURLs) internal pure {
-    if (encryptedSecretsURLs.length == 0) revert EmptySecrets();
+    if (encryptedSecretsURLs.length == 0) revert("ERROR:EmptySecrets");
 
     self.secretsLocation = Location.Remote;
     self.secrets = encryptedSecretsURLs;
@@ -125,7 +119,7 @@ library Functions {
    * @param args The array of args (must not be empty)
    */
   function addArgs(Request memory self, string[] memory args) internal pure {
-    if (args.length == 0) revert EmptyArgs();
+    if (args.length == 0) revert("ERROR:EmptyArgs");
 
     self.args = args;
   }

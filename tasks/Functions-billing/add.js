@@ -1,5 +1,6 @@
 const { networks } = require("../../networks")
 
+// npx hardhat functions-sub-add --subid 550 --contract 0x307ba83B5BfA2215D1aeB90Cadb52ffF56F27868 --network polygonMumbai
 task("functions-sub-add", "Adds a client contract to the Functions billing subscription")
   .addParam("subid", "Subscription ID")
   .addParam("contract", "Address of the Functions client contract to authorize for billing")

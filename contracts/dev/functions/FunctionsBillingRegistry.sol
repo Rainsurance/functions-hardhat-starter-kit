@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -37,18 +37,6 @@ contract FunctionsBillingRegistry is
   // Should a user require more consumers, they can use multiple subscriptions.
   uint16 public constant MAX_CONSUMERS = 100;
 
-  error TooManyConsumers();
-  error InsufficientBalance();
-  error InvalidConsumer(uint64 subscriptionId, address consumer);
-  error InvalidSubscription();
-  error OnlyCallableFromLink();
-  error InvalidCalldata();
-  error MustBeSubOwner(address owner);
-  error PendingRequestExists();
-  error MustBeRequestedOwner(address proposedOwner);
-  error BalanceInvariantViolated(uint256 internalBalance, uint256 externalBalance); // Should never happen
-  event FundsRecovered(address to, uint256 amount);
-
   struct Subscription {
     // There are only 1e9*1e18 = 1e27 juels in existence, so the balance can fit in uint96 (2^96 ~ 7e28)
     uint96 balance; // Common LINK balance that is controlled by the Registry to be used for all consumer requests.
@@ -85,11 +73,6 @@ contract FunctionsBillingRegistry is
   event SubscriptionCanceled(uint64 indexed subscriptionId, address to, uint256 amount);
   event SubscriptionOwnerTransferRequested(uint64 indexed subscriptionId, address from, address to);
   event SubscriptionOwnerTransferred(uint64 indexed subscriptionId, address from, address to);
-
-  error GasLimitTooBig(uint32 have, uint32 want);
-  error InvalidLinkWeiPrice(int256 linkWei);
-  error PaymentTooLarge();
-  error Reentrant();
 
   mapping(address => uint96) /* oracle node */ /* LINK balance */ private s_withdrawableTokens;
   struct Commitment {
@@ -175,7 +158,7 @@ contract FunctionsBillingRegistry is
     uint32 requestTimeoutSeconds
   ) external onlyOwner {
     if (fallbackWeiPerUnitLink <= 0) {
-      revert InvalidLinkWeiPrice(fallbackWeiPerUnitLink);
+      revert("ERROR:InvalidLinkWeiPrice");
     }
     s_config = Config({
       maxGasLimit: maxGasLimit,
@@ -243,7 +226,7 @@ contract FunctionsBillingRegistry is
   function ownerCancelSubscription(uint64 subscriptionId) external onlyOwner {
     address owner = s_subscriptionConfigs[subscriptionId].owner;
     if (owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     cancelSubscriptionHelper(subscriptionId, owner);
   }
@@ -256,12 +239,12 @@ contract FunctionsBillingRegistry is
     uint256 externalBalance = LINK.balanceOf(address(this));
     uint256 internalBalance = uint256(s_totalBalance);
     if (internalBalance > externalBalance) {
-      revert BalanceInvariantViolated(internalBalance, externalBalance);
+      revert("ERROR:BalanceInvariantViolated");
     }
     if (internalBalance < externalBalance) {
       uint256 amount = externalBalance - internalBalance;
       LINK.transfer(to, amount);
-      emit FundsRecovered(to, amount);
+      revert("ERROR:FundsRecovered");
     }
     // If the balances are equal, nothing to be done.
   }
@@ -296,14 +279,14 @@ contract FunctionsBillingRegistry is
     int256 weiPerUnitLink;
     weiPerUnitLink = getFeedData();
     if (weiPerUnitLink <= 0) {
-      revert InvalidLinkWeiPrice(weiPerUnitLink);
+      revert("ERROR:InvalidLinkWeiPrice");
     }
     uint256 executionGas = s_config.gasOverhead + s_config.gasAfterPaymentCalculation + gasLimit;
     // (1e18 juels/link) (wei/gas * gas) / (wei/link) = juels
     uint256 paymentNoFee = (1e18 * gasPrice * executionGas) / uint256(weiPerUnitLink);
     uint256 fee = uint256(donFee) + uint256(registryFee);
     if (paymentNoFee > (1e27 - fee)) {
-      revert PaymentTooLarge(); // Payment + fee cannot be more than all of the link in existence.
+      revert("ERROR:PaymentTooLarge"); // Payment + fee cannot be more than all of the link in existence.
     }
     return uint96(paymentNoFee + fee);
   }
@@ -317,19 +300,19 @@ contract FunctionsBillingRegistry is
   ) external override validateAuthorizedSender nonReentrant whenNotPaused returns (bytes32) {
     // Input validation using the subscription storage.
     if (s_subscriptionConfigs[billing.subscriptionId].owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     // It's important to ensure that the consumer is in fact who they say they
     // are, otherwise they could use someone else's subscription balance.
     // A nonce of 0 indicates consumer is not allocated to the sub.
     uint64 currentNonce = s_consumers[billing.client][billing.subscriptionId];
     if (currentNonce == 0) {
-      revert InvalidConsumer(billing.subscriptionId, billing.client);
+      revert("ERROR:InvalidConsumer");
     }
     // No lower bound on the requested gas limit. A user could request 0
     // and they would simply be billed for the gas and computation.
     if (billing.gasLimit > s_config.maxGasLimit) {
-      revert GasLimitTooBig(billing.gasLimit, s_config.maxGasLimit);
+      revert("ERROR:GasLimitTooBig");
     }
 
     // Check that subscription can afford the estimated cost
@@ -339,7 +322,7 @@ contract FunctionsBillingRegistry is
     uint96 effectiveBalance = s_subscriptions[billing.subscriptionId].balance -
       s_subscriptions[billing.subscriptionId].blockedBalance;
     if (effectiveBalance < estimatedCost) {
-      revert InsufficientBalance();
+      revert("ERROR:InsufficientBalance");
     }
 
     uint64 nonce = currentNonce + 1;
@@ -456,7 +439,7 @@ contract FunctionsBillingRegistry is
       tx.gasprice
     );
     if (s_subscriptions[commitment.subscriptionId].balance < bill.totalCost) {
-      revert InsufficientBalance();
+      revert("ERROR:InsufficientBalance");
     }
     s_subscriptions[commitment.subscriptionId].balance -= bill.totalCost;
     // Pay out signers their portion of the DON fee
@@ -494,7 +477,7 @@ contract FunctionsBillingRegistry is
     int256 weiPerUnitLink;
     weiPerUnitLink = getFeedData();
     if (weiPerUnitLink <= 0) {
-      revert InvalidLinkWeiPrice(weiPerUnitLink);
+      revert("ERROR:InvalidLinkWeiPrice");
     }
     // (1e18 juels/link) (wei/gas * gas) / (wei/link) = juels
     uint256 paymentNoFee = (1e18 *
@@ -502,7 +485,7 @@ contract FunctionsBillingRegistry is
       (reportValidationGas + gasAfterPaymentCalculation + startGas - gasleft())) / uint256(weiPerUnitLink);
     uint256 fee = uint256(donFee) + uint256(registryFee);
     if (paymentNoFee > (1e27 - fee)) {
-      revert PaymentTooLarge(); // Payment + fee cannot be more than all of the link in existence.
+      revert("ERROR:PaymentTooLarge"); // Payment + fee cannot be more than all of the link in existence.
     }
     uint96 signerPayment = donFee / uint96(signerCount);
     uint96 transmitterPayment = uint96(paymentNoFee);
@@ -533,12 +516,12 @@ contract FunctionsBillingRegistry is
       amount = s_withdrawableTokens[msg.sender];
     }
     if (s_withdrawableTokens[msg.sender] < amount) {
-      revert InsufficientBalance();
+      revert("ERROR:InsufficientBalance");
     }
     s_withdrawableTokens[msg.sender] -= amount;
     s_totalBalance -= amount;
     if (!LINK.transfer(recipient, amount)) {
-      revert InsufficientBalance();
+      revert("ERROR:InsufficientBalance");
     }
   }
 
@@ -548,14 +531,14 @@ contract FunctionsBillingRegistry is
     bytes calldata data
   ) external override nonReentrant whenNotPaused {
     if (msg.sender != address(LINK)) {
-      revert OnlyCallableFromLink();
+      revert("ERROR:OnlyCallableFromLink");
     }
     if (data.length != 32) {
-      revert InvalidCalldata();
+      revert("ERROR:InvalidCalldata");
     }
     uint64 subscriptionId = abi.decode(data, (uint64));
     if (s_subscriptionConfigs[subscriptionId].owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     // We do not check that the msg.sender is the subscription owner,
     // anyone can fund a subscription.
@@ -580,7 +563,7 @@ contract FunctionsBillingRegistry is
     uint64 subscriptionId
   ) external view returns (uint96 balance, address owner, address[] memory consumers) {
     if (s_subscriptionConfigs[subscriptionId].owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     return (
       s_subscriptions[subscriptionId].balance,
@@ -621,7 +604,7 @@ contract FunctionsBillingRegistry is
    */
   function getSubscriptionOwner(uint64 subscriptionId) external view override returns (address owner) {
     if (s_subscriptionConfigs[subscriptionId].owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     return s_subscriptionConfigs[subscriptionId].owner;
   }
@@ -652,10 +635,10 @@ contract FunctionsBillingRegistry is
     uint64 subscriptionId
   ) external nonReentrant whenNotPaused onlyAuthorizedUsers {
     if (s_subscriptionConfigs[subscriptionId].owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     if (s_subscriptionConfigs[subscriptionId].requestedOwner != msg.sender) {
-      revert MustBeRequestedOwner(s_subscriptionConfigs[subscriptionId].requestedOwner);
+      revert("ERROR:MustBeRequestedOwner");
     }
     address oldOwner = s_subscriptionConfigs[subscriptionId].owner;
     s_subscriptionConfigs[subscriptionId].owner = msg.sender;
@@ -673,7 +656,7 @@ contract FunctionsBillingRegistry is
     address consumer
   ) external onlySubOwner(subscriptionId) nonReentrant whenNotPaused {
     if (s_consumers[consumer][subscriptionId] == 0) {
-      revert InvalidConsumer(subscriptionId, consumer);
+      revert("ERROR:InvalidConsumer");
     }
     // Note bounded by MAX_CONSUMERS
     address[] memory consumers = s_subscriptionConfigs[subscriptionId].consumers;
@@ -703,7 +686,7 @@ contract FunctionsBillingRegistry is
   ) external onlySubOwner(subscriptionId) nonReentrant whenNotPaused {
     // Already maxed, cannot add any more consumers.
     if (s_subscriptionConfigs[subscriptionId].consumers.length == MAX_CONSUMERS) {
-      revert TooManyConsumers();
+      revert("ERROR:TooManyConsumers");
     }
     if (s_consumers[consumer][subscriptionId] != 0) {
       // Idempotence - do nothing if already added.
@@ -727,7 +710,7 @@ contract FunctionsBillingRegistry is
     address to
   ) external onlySubOwner(subscriptionId) nonReentrant whenNotPaused {
     if (pendingRequestExists(subscriptionId)) {
-      revert PendingRequestExists();
+      revert("ERROR:PendingRequestExists");
     }
     cancelSubscriptionHelper(subscriptionId, to);
   }
@@ -744,7 +727,7 @@ contract FunctionsBillingRegistry is
     delete s_subscriptions[subscriptionId];
     s_totalBalance -= balance;
     if (!LINK.transfer(to, uint256(balance))) {
-      revert InsufficientBalance();
+      revert("ERROR:InsufficientBalance");
     }
     emit SubscriptionCanceled(subscriptionId, to, balance);
   }
@@ -789,7 +772,7 @@ contract FunctionsBillingRegistry is
 
       // Check that the message sender is the subscription owner
       if (msg.sender != s_subscriptionConfigs[commitment.subscriptionId].owner) {
-        revert MustBeSubOwner(s_subscriptionConfigs[commitment.subscriptionId].owner);
+        revert("ERROR:MustBeSubOwner");
       }
 
       if (commitment.timestamp + s_config.requestTimeoutSeconds > block.timestamp) {
@@ -807,7 +790,7 @@ contract FunctionsBillingRegistry is
    */
   modifier onlyAuthorizedUsers() {
     if (ORACLE_WITH_ALLOWLIST.authorizedReceiverActive() && !ORACLE_WITH_ALLOWLIST.isAuthorizedSender(msg.sender)) {
-      revert UnauthorizedSender();
+      revert("ERROR:UnauthorizedSender");
     }
     _;
   }
@@ -815,17 +798,17 @@ contract FunctionsBillingRegistry is
   modifier onlySubOwner(uint64 subscriptionId) {
     address owner = s_subscriptionConfigs[subscriptionId].owner;
     if (owner == address(0)) {
-      revert InvalidSubscription();
+      revert("ERROR:InvalidSubscription");
     }
     if (msg.sender != owner) {
-      revert MustBeSubOwner(owner);
+      revert("ERROR:MustBeSubOwner");
     }
     _;
   }
 
   modifier nonReentrant() {
     if (s_config.reentrancyLock) {
-      revert Reentrant();
+      revert("ERROR:Reentrant");
     }
     _;
   }

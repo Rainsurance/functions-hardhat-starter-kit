@@ -16,8 +16,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * of juicy storage layout optimizations, leading to a substantial increase in gas cost.
  */
 abstract contract OCR2BaseUpgradeable is Initializable, ConfirmedOwnerUpgradeable, OCR2Abstract {
-  error ReportInvalid();
-
   bool internal i_uniqueReports;
 
   /**
@@ -338,7 +336,7 @@ abstract contract OCR2BaseUpgradeable is Initializable, ConfirmedOwnerUpgradeabl
       uint32 epochAndRound = uint32(uint256(reportContext[1]));
 
       if (!_validateReport(configDigest, epochAndRound, report)) {
-        revert ReportInvalid();
+        revert("ERROR:ReportInvalid");
       }
 
       emit Transmitted(configDigest, uint32(epochAndRound >> 8));

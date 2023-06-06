@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 /**
  * @notice Modified AuthorizedReciever abstract for use on the Functions Oracle contract to limit usage

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import "../interfaces/FunctionsOracleInterface.sol";
 import "../ocr2/OCR2BaseUpgradeable.sol";
@@ -29,12 +29,6 @@ contract FunctionsOracle is
   event UserCallbackError(bytes32 indexed requestId, string reason);
   event UserCallbackRawError(bytes32 indexed requestId, bytes lowLevelData);
   event InvalidRequestID(bytes32 indexed requestId);
-
-  error EmptyRequestData();
-  error InconsistentReportData();
-  error EmptyPublicKey();
-  error EmptyBillingRegistry();
-  error UnauthorizedPublicKeyChange();
 
   bytes private s_donPublicKey;
   FunctionsBillingRegistryInterface private s_registry;
@@ -68,7 +62,7 @@ contract FunctionsOracle is
    */
   function setRegistry(address registryAddress) external override onlyOwner {
     if (registryAddress == address(0)) {
-      revert EmptyBillingRegistry();
+      revert("ERROR:EmptyBillingRegistry");
     }
     s_registry = FunctionsBillingRegistryInterface(registryAddress);
   }
@@ -85,7 +79,7 @@ contract FunctionsOracle is
    */
   function setDONPublicKey(bytes calldata donPublicKey) external override onlyOwner {
     if (donPublicKey.length == 0) {
-      revert EmptyPublicKey();
+      revert("ERROR:EmptyPublicKey");
     }
     s_donPublicKey = donPublicKey;
   }
@@ -109,7 +103,7 @@ contract FunctionsOracle is
   function setNodePublicKey(address node, bytes calldata publicKey) external override {
     // Owner can set anything. Transmitters can set only their own key.
     if (!(msg.sender == owner() || (_isTransmitter(msg.sender) && msg.sender == node))) {
-      revert UnauthorizedPublicKeyChange();
+      revert("ERROR:UnauthorizedPublicKeyChange");
     }
     s_nodePublicKeys[node] = publicKey;
   }
@@ -120,7 +114,7 @@ contract FunctionsOracle is
   function deleteNodePublicKey(address node) external override {
     // Owner can delete anything. Others can delete only their own key.
     if (!(msg.sender == owner() || msg.sender == node)) {
-      revert UnauthorizedPublicKeyChange();
+      revert("ERROR:UnauthorizedPublicKeyChange");
     }
     delete s_nodePublicKeys[node];
   }
@@ -178,7 +172,7 @@ contract FunctionsOracle is
     uint32 gasLimit
   ) external override registryIsSet validateAuthorizedSender returns (bytes32) {
     if (data.length == 0) {
-      revert EmptyRequestData();
+      revert("ERROR:EmptyRequestData");
     }
     bytes32 requestId = s_registry.startBilling(
       data,
@@ -220,7 +214,7 @@ contract FunctionsOracle is
     bytes[] memory errors;
     (requestIds, results, errors) = abi.decode(report, (bytes32[], bytes[], bytes[]));
     if (requestIds.length == 0 || requestIds.length != results.length || requestIds.length != errors.length) {
-      revert ReportInvalid();
+      revert("ERROR:ReportInvalid");
     }
 
     uint256 reportValidationGasShare = (initialGas - gasleft()) / requestIds.length;
@@ -256,7 +250,7 @@ contract FunctionsOracle is
    */
   modifier registryIsSet() {
     if (address(s_registry) == address(0)) {
-      revert EmptyBillingRegistry();
+      revert("ERROR:EmptyBillingRegistry");
     }
     _;
   }

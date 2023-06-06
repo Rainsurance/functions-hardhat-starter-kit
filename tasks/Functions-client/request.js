@@ -8,6 +8,7 @@ const { RequestStore } = require("../utils/artifact")
 const path = require("path")
 const process = require("process")
 
+// npx hardhat functions-request --network polygonMumbai --contract 0x915bc4E84f348952E16320c1adbAE4119EefB147 --subid 550 --gaslimit 300000
 task("functions-request", "Initiates a request from a Functions client contract")
   .addParam("contract", "Address of the client contract to call")
   .addParam("subid", "Billing subscription ID used to pay for the request")

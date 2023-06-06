@@ -15,8 +15,6 @@ import "@chainlink/contracts/src/v0.8/dev/ocr2/OCR2Abstract.sol";
  * of juicy storage layout optimizations, leading to a substantial increase in gas cost.
  */
 abstract contract OCR2Base is ConfirmedOwner, OCR2Abstract {
-  error ReportInvalid();
-
   bool internal immutable i_uniqueReports;
 
   constructor(bool uniqueReports) ConfirmedOwner(msg.sender) {
@@ -333,7 +331,7 @@ abstract contract OCR2Base is ConfirmedOwner, OCR2Abstract {
       uint32 epochAndRound = uint32(uint256(reportContext[1]));
 
       if (!_validateReport(configDigest, epochAndRound, report)) {
-        revert ReportInvalid();
+        revert("ERROR:ReportInvalid");
       }
 
       emit Transmitted(configDigest, uint32(epochAndRound >> 8));

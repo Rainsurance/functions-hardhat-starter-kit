@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import "./vendor/openzeppelin-solidity/v.4.8.0/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/AuthorizedReceiverInterface.sol";
@@ -8,10 +8,6 @@ abstract contract AuthorizedReceiver is AuthorizedReceiverInterface {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   event AuthorizedSendersChanged(address[] senders, address changedBy);
-
-  error EmptySendersList();
-  error UnauthorizedSender();
-  error NotAllowedToSetSenders();
 
   EnumerableSet.AddressSet private s_authorizedSenders;
   address[] private s_authorizedSendersList;
@@ -22,7 +18,7 @@ abstract contract AuthorizedReceiver is AuthorizedReceiverInterface {
    */
   function setAuthorizedSenders(address[] calldata senders) external override validateAuthorizedSenderSetter {
     if (senders.length == 0) {
-      revert EmptySendersList();
+      revert("ERROR:EmptySendersList");
     }
     for (uint256 i = 0; i < s_authorizedSendersList.length; i++) {
       s_authorizedSenders.remove(s_authorizedSendersList[i]);
@@ -62,7 +58,7 @@ abstract contract AuthorizedReceiver is AuthorizedReceiverInterface {
    */
   function _validateIsAuthorizedSender() internal view {
     if (!isAuthorizedSender(msg.sender)) {
-      revert UnauthorizedSender();
+      revert("ERROR:UnauthorizedSender");
     }
   }
 
@@ -79,7 +75,7 @@ abstract contract AuthorizedReceiver is AuthorizedReceiverInterface {
    */
   modifier validateAuthorizedSenderSetter() {
     if (!_canSetAuthorizedSenders()) {
-      revert NotAllowedToSetSenders();
+      revert("ERROR:NotAllowedToSetSenders");
     }
     _;
   }

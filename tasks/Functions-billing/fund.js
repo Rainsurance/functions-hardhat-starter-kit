@@ -1,5 +1,6 @@
 const { networks } = require("../../networks")
 
+// npx hardhat functions-sub-fund --subid 550 --amount 1 --network polygonMumbai
 task("functions-sub-fund", "Funds a billing subscription for Functions consumer contracts")
   .addParam("amount", "Amount to fund subscription in LINK")
   .addParam("subid", "Subscription ID to fund")

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import {EnumerableSet} from "../vendor/openzeppelin-solidity/v.4.8.0/contracts/utils/structs/EnumerableSet.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -15,11 +15,6 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
   event AuthorizedSendersChanged(address[] senders, address changedBy);
   event AuthorizedSendersActive(address account);
   event AuthorizedSendersDeactive(address account);
-
-  error EmptySendersList();
-  error UnauthorizedSender();
-  error NotAllowedToSetSenders();
-  error AlreadySet();
 
   bool private s_active;
   EnumerableSet.AddressSet private s_authorizedSenders;
@@ -47,7 +42,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   function activateAuthorizedReceiver() external validateAuthorizedSenderSetter {
     if (authorizedReceiverActive()) {
-      revert AlreadySet();
+      revert("ERROR:AlreadySet");
     }
     s_active = true;
     emit AuthorizedSendersActive(msg.sender);
@@ -62,7 +57,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   function deactivateAuthorizedReceiver() external validateAuthorizedSenderSetter {
     if (!authorizedReceiverActive()) {
-      revert AlreadySet();
+      revert("ERROR:AlreadySet");
     }
     s_active = false;
     emit AuthorizedSendersDeactive(msg.sender);
@@ -74,7 +69,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   function addAuthorizedSenders(address[] calldata senders) external validateAuthorizedSenderSetter {
     if (senders.length == 0) {
-      revert EmptySendersList();
+      revert("ERROR:EmptySendersList");
     }
     for (uint256 i = 0; i < senders.length; i++) {
       s_authorizedSenders.add(senders[i]);
@@ -88,7 +83,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   function removeAuthorizedSenders(address[] calldata senders) external validateAuthorizedSenderSetter {
     if (senders.length == 0) {
-      revert EmptySendersList();
+      revert("ERROR:EmptySendersList");
     }
     for (uint256 i = 0; i < senders.length; i++) {
       s_authorizedSenders.remove(senders[i]);
@@ -127,7 +122,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   function _validateIsAuthorizedSender() internal view {
     if (!isAuthorizedSender(tx.origin)) {
-      revert UnauthorizedSender();
+      revert("ERROR:UnauthorizedSender");
     }
   }
 
@@ -144,7 +139,7 @@ abstract contract AuthorizedOriginReceiverUpgradeable is Initializable {
    */
   modifier validateAuthorizedSenderSetter() {
     if (!_canSetAuthorizedSenders()) {
-      revert NotAllowedToSetSenders();
+      revert("ERROR:NotAllowedToSetSenders");
     }
     _;
   }

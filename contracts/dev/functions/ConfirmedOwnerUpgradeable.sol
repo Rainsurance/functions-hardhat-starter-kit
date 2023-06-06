@@ -15,17 +15,12 @@ contract ConfirmedOwnerUpgradeable is Initializable, OwnableInterface {
   event OwnershipTransferRequested(address indexed from, address indexed to);
   event OwnershipTransferred(address indexed from, address indexed to);
 
-  error OwnerMustBeSet();
-  error NotProposedOwner();
-  error CannotSelfTransfer();
-  error OnlyCallableByOwner();
-
   /**
    * @dev Initializes the contract in unpaused state.
    */
   function __ConfirmedOwner_initialize(address newOwner, address pendingOwner) internal onlyInitializing {
     if (newOwner == address(0)) {
-      revert OwnerMustBeSet();
+      revert("ERROR:OwnerMustBeSet");
     }
 
     s_owner = newOwner;
@@ -47,7 +42,7 @@ contract ConfirmedOwnerUpgradeable is Initializable, OwnableInterface {
    */
   function acceptOwnership() external override {
     if (msg.sender != s_pendingOwner) {
-      revert NotProposedOwner();
+      revert("ERROR:NotProposedOwner");
     }
 
     address oldOwner = s_owner;
@@ -69,7 +64,7 @@ contract ConfirmedOwnerUpgradeable is Initializable, OwnableInterface {
    */
   function _transferOwnership(address to) private {
     if (to == msg.sender) {
-      revert CannotSelfTransfer();
+      revert("ERROR:CannotSelfTransfer");
     }
 
     s_pendingOwner = to;
@@ -82,7 +77,7 @@ contract ConfirmedOwnerUpgradeable is Initializable, OwnableInterface {
    */
   function _validateOwnership() internal view {
     if (msg.sender != s_owner) {
-      revert OnlyCallableByOwner();
+      revert("ERROR:OnlyCallableByOwner");
     }
   }
 

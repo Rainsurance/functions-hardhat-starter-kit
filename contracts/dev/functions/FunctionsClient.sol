@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+pragma solidity ^0.8.2;
 
 import "./Functions.sol";
 import "../interfaces/FunctionsClientInterface.sol";
@@ -15,10 +15,6 @@ abstract contract FunctionsClient is FunctionsClientInterface {
 
   event RequestSent(bytes32 indexed id);
   event RequestFulfilled(bytes32 indexed id);
-
-  error SenderIsNotRegistry();
-  error RequestIsAlreadyPending();
-  error RequestIsNotPending();
 
   constructor(address oracle) {
     setOracle(oracle);
@@ -118,7 +114,7 @@ abstract contract FunctionsClient is FunctionsClientInterface {
    */
   modifier recordChainlinkFulfillment(bytes32 requestId) {
     if (msg.sender != s_pendingRequests[requestId]) {
-      revert SenderIsNotRegistry();
+      revert("ERROR:SenderIsNotRegistry");
     }
     delete s_pendingRequests[requestId];
     emit RequestFulfilled(requestId);
@@ -131,7 +127,7 @@ abstract contract FunctionsClient is FunctionsClientInterface {
    */
   modifier notPendingRequest(bytes32 requestId) {
     if (s_pendingRequests[requestId] != address(0)) {
-      revert RequestIsAlreadyPending();
+      revert("ERROR:RequestIsAlreadyPending");
     }
     _;
   }

@@ -1,5 +1,21 @@
 const { networks } = require("../../networks")
 
+// npx hardhat functions-sub-create --network polygonMumbai --amount 1
+
+// Created subscription with ID: 550
+// Owner: 0xe220825b597e4D5867218E0Efa9684Dd26957b00
+
+// authorized consumer contracts for subscription 550:
+// [
+//   '0x915bc4E84f348952E16320c1adbAE4119EefB147', -> FunctionsConsumer
+//   '0xd5359d7097cC3E112e75E4af79418Db316d426fD', -> RainOracle CL Functions
+//   '0x6424B8917f9A18A24d6001F14D82ce69F54726a7', -> RainProduct
+//   '0x6030A6e9BB4D09d6732Fda63b0C5C9E5a76d340F', -> Insurer EOA
+//   '0xFCc026DbeD1FaB63C4ec517D1F4B58A63bdfd136',
+//   '0xB59EF5D36eC439fF9e98746Fe7944275e81B0e45' -> RainOracle CL Functions new
+//   '0x307ba83B5BfA2215D1aeB90Cadb52ffF56F27868' -> RainProduct new
+// ]
+
 task("functions-sub-create", "Creates a new billing subscription for Functions consumer contracts")
   .addOptionalParam("amount", "Initial amount used to fund the subscription in LINK")
   .addOptionalParam("contract", "Address of the client contract address authorized to use the new billing subscription")

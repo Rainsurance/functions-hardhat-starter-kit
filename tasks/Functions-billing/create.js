@@ -14,6 +14,8 @@ const { networks } = require("../../networks")
 //   '0xFCc026DbeD1FaB63C4ec517D1F4B58A63bdfd136',
 //   '0xB59EF5D36eC439fF9e98746Fe7944275e81B0e45' -> RainOracle CL Functions new
 //   '0x307ba83B5BfA2215D1aeB90Cadb52ffF56F27868' -> RainProduct new
+//   '0xf6095B7750AC506E757550A8C015CfAc30EaEFf5' -> RainOracle CL Functions with Automation
+//   '0x0963e107D43b2452c825eaa02743083dcc723045' -> RainOracle CL Functions with Automation 2023.06.07
 // ]
 
 task("functions-sub-create", "Creates a new billing subscription for Functions consumer contracts")

@@ -31,12 +31,14 @@ task("functions-deploy-rainsurance", "Deploys the RainOracleCLFunctions contract
     const baseName = `Rain_${Math.floor(Date.now() / 1000)}_Oracle`
     const clientName = ethers.utils.formatBytes32String(baseName)
     const clientContractFactory = await ethers.getContractFactory("RainOracleCLFunctions")
+    const interval = 300;
     const clientContract = await clientContractFactory.deploy(
       clientName,
       gifRegistry,
       oracleAddress,
       subscriptionId,
-      gasLimit
+      gasLimit,
+      interval
     )
 
     console.log(
@@ -54,7 +56,7 @@ task("functions-deploy-rainsurance", "Deploys the RainOracleCLFunctions contract
         await clientContract.deployTransaction.wait(Math.max(6 - networks[network.name].confirmations, 0))
         await run("verify:verify", {
           address: clientContract.address,
-          constructorArguments: [clientName, gifRegistry, oracleAddress, subscriptionId, gasLimit],
+          constructorArguments: [clientName, gifRegistry, oracleAddress, subscriptionId, gasLimit, interval],
         })
         console.log("Contract verified")
       } catch (error) {
